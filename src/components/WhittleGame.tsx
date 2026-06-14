@@ -1,32 +1,128 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { PUZZLE } from '../data/levels'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { loadDictionary } from '../lib/dictionary'
+import {
+  getDailyPuzzle,
+  getYesterdayPuzzle,
+  msUntilNextPuzzle,
+} from '../lib/dailyPuzzle'
+import { loadOrCreateDailyGame, saveDailyGame } from '../lib/dailySave'
 import {
   applyAction,
   checkDeadEndLoss,
-  createInitialState,
 } from '../lib/gameLogic'
+import { GameFooter } from './GameFooter'
 import { GameHeader } from './GameHeader'
 import { GameModal } from './GameModal'
+import { InfoModal, type InfoModalKind } from './InfoModal'
 import { LetterKeyboard } from './LetterKeyboard'
 import { Toast } from './Toast'
 import { WordleBoard, type EditMode } from './WordleBoard'
+import {
+  hasRecordedResult,
+  loadStats,
+  recordResult,
+  type PlayerStats,
+} from '../lib/stats'
+import { hasSeenHowToPlay, markHowToPlaySeen } from '../lib/onboarding'
+
+function createSession(puzzle = getDailyPuzzle()) {
+  const save = loadOrCreateDailyGame(puzzle)
+  const statsRecorded =
+    save.statsRecorded || hasRecordedResult(puzzle.id)
+
+  return {
+    puzzle,
+    gameState: save.gameState,
+    statsRecorded,
+  }
+}
 
 export function WhittleGame() {
+  const initialSession = useMemo(() => createSession(), [])
   const [dictionary, setDictionary] = useState<Set<string> | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
-  const [gameState, setGameState] = useState(() => createInitialState(PUZZLE))
+  const [dailyPuzzle, setDailyPuzzle] = useState(initialSession.puzzle)
+  const yesterdayPuzzle = useMemo(() => getYesterdayPuzzle(), [dailyPuzzle.id])
+  const [gameState, setGameState] = useState(initialSession.gameState)
   const [shake, setShake] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
   const [mode, setMode] = useState<EditMode>('drop')
   const [selectedGap, setSelectedGap] = useState<number | null>(null)
+  const [endModalOpen, setEndModalOpen] = useState(false)
+  const [infoModal, setInfoModal] = useState<InfoModalKind | null>(null)
+  const [stats, setStats] = useState<PlayerStats>(() => loadStats())
   const mainRef = useRef<HTMLElement>(null)
+  const prevStatusRef = useRef(gameState.status)
+  const puzzleIdRef = useRef(dailyPuzzle.id)
+  const statsRecordedRef = useRef(initialSession.statsRecorded)
+
+  useEffect(() => {
+    let timeoutId = 0
+
+    const scheduleNextPuzzleCheck = () => {
+      timeoutId = window.setTimeout(() => {
+        const nextPuzzle = getDailyPuzzle()
+        setDailyPuzzle((current) =>
+          current.id === nextPuzzle.id ? current : nextPuzzle,
+        )
+        scheduleNextPuzzleCheck()
+      }, msUntilNextPuzzle() + 250)
+    }
+
+    scheduleNextPuzzleCheck()
+    return () => window.clearTimeout(timeoutId)
+  }, [])
+
+  useEffect(() => {
+    if (puzzleIdRef.current === dailyPuzzle.id) return
+
+    puzzleIdRef.current = dailyPuzzle.id
+    const save = loadOrCreateDailyGame(dailyPuzzle)
+    statsRecordedRef.current =
+      save.statsRecorded || hasRecordedResult(dailyPuzzle.id)
+    setGameState(save.gameState)
+    setEndModalOpen(false)
+    setMode('drop')
+    setSelectedGap(null)
+  }, [dailyPuzzle])
+
+  useEffect(() => {
+    saveDailyGame({
+      puzzleId: dailyPuzzle.id,
+      gameState,
+      statsRecorded: statsRecordedRef.current,
+    })
+  }, [dailyPuzzle.id, gameState])
 
   useEffect(() => {
     loadDictionary()
       .then(setDictionary)
       .catch(() => setLoadError('Could not load dictionary.'))
   }, [])
+
+  useEffect(() => {
+    if (!dictionary || hasSeenHowToPlay()) return
+    setInfoModal('how-to')
+  }, [dictionary])
+
+  useEffect(() => {
+    const prevStatus = prevStatusRef.current
+    prevStatusRef.current = gameState.status
+
+    if (prevStatus === 'playing' && gameState.status !== 'playing') {
+      setEndModalOpen(true)
+
+      if (!statsRecordedRef.current) {
+        setStats(recordResult(gameState.status, dailyPuzzle.id))
+        statsRecordedRef.current = true
+        saveDailyGame({
+          puzzleId: dailyPuzzle.id,
+          gameState,
+          statsRecorded: true,
+        })
+      }
+    }
+  }, [dailyPuzzle.id, gameState])
 
   useEffect(() => {
     const main = mainRef.current
@@ -125,8 +221,16 @@ export function WhittleGame() {
         className="mx-auto flex w-full max-w-lg min-h-0 flex-1 flex-col items-center overflow-y-auto px-4 pt-8 pb-6"
       >
         <p className="mb-6 max-w-sm text-center text-[15px] leading-snug text-wordle-text">
-          {PUZZLE.description}
+          {dailyPuzzle.description}
         </p>
+
+        {!isPlaying && (
+          <p className="mb-4 text-center text-[12px] font-semibold uppercase tracking-widest text-wordle-gray">
+            {gameState.status === 'won'
+              ? 'Come back tomorrow for a new puzzle'
+              : 'No moves left — try again tomorrow'}
+          </p>
+        )}
 
         <WordleBoard
           gameState={gameState}
@@ -156,15 +260,36 @@ export function WhittleGame() {
         </div>
       )}
 
+      <GameFooter
+        onYesterday={() => setInfoModal('yesterday')}
+        onStats={() => setInfoModal('stats')}
+        onHowToPlay={() => setInfoModal('how-to')}
+      />
+
       <Toast message={toast} />
+      <InfoModal
+        kind={infoModal}
+        puzzle={dailyPuzzle}
+        yesterdayPuzzle={yesterdayPuzzle}
+        stats={stats}
+        turnsUsed={gameState.turnsUsed}
+        par={gameState.par}
+        status={gameState.status}
+        onClose={() => {
+          if (infoModal === 'how-to') markHowToPlaySeen()
+          setInfoModal(null)
+        }}
+      />
       <GameModal
+        open={endModalOpen}
         status={gameState.status}
         startWord={gameState.startWord}
         targetWord={gameState.targetWord}
         turnsUsed={gameState.turnsUsed}
         par={gameState.par}
-        puzzleId={PUZZLE.id}
+        puzzleId={dailyPuzzle.id}
         moveHistory={gameState.moveHistory}
+        onClose={() => setEndModalOpen(false)}
         onShareMessage={showToast}
       />
     </div>

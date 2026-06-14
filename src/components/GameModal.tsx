@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { GameStatus, MoveRecord } from '../types/game'
 import {
   buildShareText,
@@ -9,8 +9,10 @@ import {
   nativeShare,
 } from '../lib/share'
 import { formatScore, scoreVsPar } from '../lib/score'
+import { NextPuzzleCountdown } from './NextPuzzleCountdown'
 
 interface GameModalProps {
+  open: boolean
   status: GameStatus
   startWord: string
   targetWord: string
@@ -18,10 +20,12 @@ interface GameModalProps {
   par: number
   puzzleId: number
   moveHistory: MoveRecord[]
+  onClose: () => void
   onShareMessage?: (message: string) => void
 }
 
 export function GameModal({
+  open,
   status,
   startWord,
   targetWord,
@@ -29,6 +33,7 @@ export function GameModal({
   par,
   puzzleId,
   moveHistory,
+  onClose,
   onShareMessage,
 }: GameModalProps) {
   const [copied, setCopied] = useState(false)
@@ -44,7 +49,16 @@ export function GameModal({
   )
   const showNativeShare = canNativeShare()
 
-  if (status === 'playing') return null
+  useEffect(() => {
+    if (!open) return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [open, onClose])
+
+  if (status === 'playing' || !open) return null
 
   const won = status === 'won'
   const vsPar = scoreVsPar(turnsUsed, par)
@@ -66,16 +80,38 @@ export function GameModal({
   }
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 p-4">
+    <div
+      className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 p-4"
+      onClick={onClose}
+    >
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-sm bg-wordle-bg p-6 text-center shadow-xl"
+        className="relative w-full max-w-sm bg-wordle-bg p-6 shadow-xl"
+        onClick={(event) => event.stopPropagation()}
       >
-        <h2 className="text-[32px] font-bold tracking-wide text-wordle-text">
-          {won ? 'Nice!' : 'Game over'}
-        </h2>
-        <p className="mt-3 text-[15px] leading-relaxed text-wordle-text">
+        <div className="mb-3 grid grid-cols-[2rem_1fr_2rem] items-center">
+          <div aria-hidden />
+          <h2 className="text-center text-[32px] font-bold tracking-wide text-wordle-text">
+            {won ? 'Nice!' : 'Game over'}
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="flex h-8 w-8 items-center justify-center rounded-sm text-wordle-text transition hover:bg-black/5"
+          >
+            <svg aria-hidden width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M6 6l12 12M18 6L6 18"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+              />
+            </svg>
+          </button>
+        </div>
+        <p className="text-center text-[15px] leading-relaxed text-wordle-text">
           {won ? (
             <>
               <span className="font-bold tracking-widest">{targetWord}</span> in{' '}
@@ -89,6 +125,7 @@ export function GameModal({
                 {formatScore(vsPar)}
               </span>
               <span className="text-wordle-gray"> (par {par})</span>
+              <NextPuzzleCountdown className="mt-3" />
             </>
           ) : (
             <>
