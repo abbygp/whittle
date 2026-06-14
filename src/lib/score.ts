@@ -17,7 +17,7 @@ export function formatScore(vsPar: number): string {
 }
 
 export function formatScoreShort(vsPar: number): string {
-  if (vsPar === 0) return 'E'
+  if (vsPar === 0) return '0'
   if (vsPar > 0) return `+${vsPar}`
   return `${vsPar}`
 }

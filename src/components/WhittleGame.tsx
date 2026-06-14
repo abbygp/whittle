@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { PUZZLE } from '../data/levels'
 import { loadDictionary } from '../lib/dictionary'
 import {
@@ -20,12 +20,19 @@ export function WhittleGame() {
   const [toast, setToast] = useState<string | null>(null)
   const [mode, setMode] = useState<EditMode>('drop')
   const [selectedGap, setSelectedGap] = useState<number | null>(null)
+  const mainRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
     loadDictionary()
       .then(setDictionary)
       .catch(() => setLoadError('Could not load dictionary.'))
   }, [])
+
+  useEffect(() => {
+    const main = mainRef.current
+    if (!main) return
+    main.scrollTo({ top: main.scrollHeight, behavior: 'smooth' })
+  }, [gameState.turnsUsed])
 
   const showToast = useCallback((message: string) => {
     setToast(message)
@@ -110,10 +117,13 @@ export function WhittleGame() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex h-dvh flex-col overflow-hidden">
       <GameHeader gameState={gameState} />
 
-      <main className="mx-auto flex w-full max-w-lg flex-1 flex-col items-center px-4 pt-8 pb-52">
+      <main
+        ref={mainRef}
+        className="mx-auto flex w-full max-w-lg min-h-0 flex-1 flex-col items-center overflow-y-auto px-4 pt-8 pb-6"
+      >
         <p className="mb-6 max-w-sm text-center text-[15px] leading-snug text-wordle-text">
           {PUZZLE.description}
         </p>
@@ -131,7 +141,7 @@ export function WhittleGame() {
       </main>
 
       {isPlaying && (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-wordle-border bg-wordle-bg">
+        <div className="shrink-0 border-t border-wordle-border bg-wordle-bg">
           <p className="pt-2 text-center text-[10px] font-semibold uppercase tracking-widest text-wordle-gray">
             {mode === 'add'
               ? selectedGap === null
@@ -149,9 +159,13 @@ export function WhittleGame() {
       <Toast message={toast} />
       <GameModal
         status={gameState.status}
+        startWord={gameState.startWord}
         targetWord={gameState.targetWord}
         turnsUsed={gameState.turnsUsed}
         par={gameState.par}
+        puzzleId={PUZZLE.id}
+        moveHistory={gameState.moveHistory}
+        onShareMessage={showToast}
       />
     </div>
   )
