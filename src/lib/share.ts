@@ -53,11 +53,10 @@ export function buildShareText(
   return lines.join('\n')
 }
 
+export const PLAY_URL = 'https://whittle.abigailprince21.workers.dev/'
+
 export function getPlayUrl(): string {
-  if (typeof window !== 'undefined' && window.location.origin) {
-    return window.location.origin
-  }
-  return 'https://github.com/abbygp/whittle'
+  return PLAY_URL
 }
 
 export async function copyShareText(text: string): Promise<boolean> {
