@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+@theme {
+  --font-wordle: "Helvetica Neue", Arial, sans-serif;
+  --color-wordle-bg: #ffffff;
+  --color-wordle-text: #1a1a1b;
+  --color-wordle-border: #d3d6da;
+  --color-wordle-key: #d3d6da;
+  --color-wordle-green: #6aaa64;
+  --color-wordle-yellow: #c9b458;
+  --color-wordle-gray: #787c7e;
+  --color-wordle-tile-active: #ffffff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--font-wordle);
+  background: var(--color-wordle-bg);
+  color: var(--color-wordle-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20%,
+  60% {
+    transform: translateX(-6px);
+  }
+  40%,
+  80% {
+    transform: translateX(6px);
+  }
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-shake {
+  animation: shake 0.5s ease-in-out;
+}
+
+.animate-pop {
+  animation: pop 0.1s ease-in-out;
+}
