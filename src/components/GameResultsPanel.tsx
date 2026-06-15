@@ -8,8 +8,8 @@ import {
   nativeShare,
 } from '../lib/share'
 import { formatScore, scoreVsPar } from '../lib/score'
+import { COFFEE_URL } from '../lib/support'
 import { type PlayerStats, winRate } from '../lib/stats'
-import { BuyMeCoffeeButton } from './BuyMeCoffeeButton'
 import { NextPuzzleCountdown } from './NextPuzzleCountdown'
 
 export function StatCard({ label, value }: { label: string; value: string }) {
@@ -128,8 +128,19 @@ export function GameResultsPanel({
 
       <NextPuzzleCountdown />
 
-      <div className="flex justify-center">
-        <BuyMeCoffeeButton />
+      <div className="rounded-sm border border-[#e8c872]/40 bg-[#fff8e8] px-3 py-3">
+        <p className="text-center text-[13px] leading-snug text-[#5c4a1e]">
+          Enjoying Whittle Daily? Help keep the servers running by{' '}
+          <a
+            href={COFFEE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold text-[#a8841a] underline decoration-[#e8c872] underline-offset-2 transition hover:text-[#7a6514]"
+          >
+            buying the developer a coffee!
+          </a>{' '}
+          ☕
+        </p>
       </div>
 
       <div className="flex gap-2">
