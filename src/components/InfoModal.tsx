@@ -1,11 +1,10 @@
 import { motion } from 'framer-motion'
 import { useEffect, type ReactNode } from 'react'
-import type { Level } from '../types/game'
+import type { GameStatus, Level, MoveRecord } from '../types/game'
 import { HowToExample } from './HowToExample'
 import { SolutionBoard } from './BoardPreview'
-import { formatScore, scoreVsPar } from '../lib/score'
-import { type PlayerStats, winRate } from '../lib/stats'
-import { NextPuzzleCountdown } from './NextPuzzleCountdown'
+import { GameResultsPanel } from './GameResultsPanel'
+import { type PlayerStats } from '../lib/stats'
 
 export type InfoModalKind = 'stats' | 'how-to' | 'yesterday'
 
@@ -16,7 +15,11 @@ interface InfoModalProps {
   stats: PlayerStats
   turnsUsed: number
   par: number
-  status: 'playing' | 'won' | 'lost'
+  status: GameStatus
+  startWord: string
+  targetWord: string
+  moveHistory: MoveRecord[]
+  onShareMessage?: (message: string) => void
   onClose: () => void
 }
 
@@ -95,6 +98,10 @@ export function InfoModal({
   turnsUsed,
   par,
   status,
+  startWord,
+  targetWord,
+  moveHistory,
+  onShareMessage,
   onClose,
 }: InfoModalProps) {
   if (!kind) return null
@@ -119,65 +126,42 @@ export function InfoModal({
   }
 
   if (kind === 'stats') {
-    const vsPar = scoreVsPar(turnsUsed, par)
-
     return (
-      <ModalShell title="Stats" onClose={onClose}>
-        <div className="space-y-2 text-left text-[15px] text-wordle-text">
-          {status === 'won' && (
-            <div className="mb-3 border-b border-wordle-border pb-4 text-center leading-relaxed">
-              <p className="mb-2 text-[24px] font-bold tracking-wide">Nice!</p>
-              <p>
-                <span className="font-bold tracking-widest">{puzzle.targetWord}</span>{' '}
-                in <span className="font-bold">{turnsUsed}</span> moves.
+      <ModalShell title="Stats" onClose={onClose} compact>
+        <GameResultsPanel
+          status={status}
+          startWord={startWord}
+          targetWord={targetWord}
+          turnsUsed={turnsUsed}
+          par={par}
+          puzzleId={puzzle.id}
+          moveHistory={moveHistory}
+          stats={stats}
+          onShareMessage={onShareMessage}
+          lifetimeStats={
+            <div className="space-y-2 border-y border-wordle-border py-4 text-left text-[15px] text-wordle-text">
+              <p className="text-center text-[10px] font-semibold uppercase tracking-widest text-wordle-gray">
+                All time
               </p>
               <p>
-                <span
-                  className={
-                    vsPar <= 0
-                      ? 'font-bold text-wordle-green'
-                      : 'font-bold text-wordle-gray'
-                  }
-                >
-                  {formatScore(vsPar)}
-                </span>
-                <span className="text-wordle-gray"> (par {par})</span>
+                <span className="text-wordle-gray">Played:</span>{' '}
+                <span className="font-bold">{stats.played}</span>
               </p>
-              <p className="mt-1 text-[12px] text-wordle-gray">
-                Whittle #{puzzle.id}
+              <p>
+                <span className="text-wordle-gray">Wins:</span>{' '}
+                <span className="font-bold">{stats.wins}</span>
+              </p>
+              <p>
+                <span className="text-wordle-gray">Losses:</span>{' '}
+                <span className="font-bold">{stats.losses}</span>
+              </p>
+              <p>
+                <span className="text-wordle-gray">Max streak:</span>{' '}
+                <span className="font-bold">{stats.maxStreak}</span>
               </p>
             </div>
-          )}
-          <p>
-            <span className="text-wordle-gray">Played:</span>{' '}
-            <span className="font-bold">{stats.played}</span>
-          </p>
-          <p>
-            <span className="text-wordle-gray">Win rate:</span>{' '}
-            <span className="font-bold">{winRate(stats)}%</span>
-          </p>
-          <p>
-            <span className="text-wordle-gray">Current streak:</span>{' '}
-            <span className="font-bold">{stats.currentStreak}</span>
-          </p>
-          <p>
-            <span className="text-wordle-gray">Max streak:</span>{' '}
-            <span className="font-bold">{stats.maxStreak}</span>
-          </p>
-          {status === 'lost' && (
-            <p className="pt-2 border-t border-wordle-border">
-              <span className="text-wordle-gray">Whittle #{puzzle.id}:</span>{' '}
-              <span className="font-bold">Lost</span>
-              {turnsUsed > 0 && (
-                <>
-                  {' '}
-                  · {turnsUsed} moves · {formatScore(vsPar)}
-                </>
-              )}
-            </p>
-          )}
-          <NextPuzzleCountdown className="pt-3 border-t border-wordle-border" />
-        </div>
+          }
+        />
       </ModalShell>
     )
   }

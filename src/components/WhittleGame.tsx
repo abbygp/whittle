@@ -49,7 +49,9 @@ export function WhittleGame() {
   const [toast, setToast] = useState<string | null>(null)
   const [mode, setMode] = useState<EditMode>('drop')
   const [selectedGap, setSelectedGap] = useState<number | null>(null)
-  const [endModalOpen, setEndModalOpen] = useState(false)
+  const [endModalOpen, setEndModalOpen] = useState(
+    () => initialSession.gameState.status !== 'playing',
+  )
   const [infoModal, setInfoModal] = useState<InfoModalKind | null>(null)
   const [stats, setStats] = useState<PlayerStats>(() => loadStats())
   const mainRef = useRef<HTMLElement>(null)
@@ -227,11 +229,20 @@ export function WhittleGame() {
         </p>
 
         {!isPlaying && (
-          <p className="mb-4 text-center text-[12px] font-semibold uppercase tracking-widest text-wordle-gray">
-            {gameState.status === 'won'
-              ? 'Come back tomorrow for a new puzzle'
-              : 'No moves left — try again tomorrow'}
-          </p>
+          <div className="mb-4 flex flex-col items-center gap-2">
+            <p className="text-center text-[12px] font-semibold uppercase tracking-widest text-wordle-gray">
+              {gameState.status === 'won'
+                ? 'Come back tomorrow for a new puzzle'
+                : 'No moves left — try again tomorrow'}
+            </p>
+            <button
+              type="button"
+              onClick={() => setEndModalOpen(true)}
+              className="text-[12px] font-bold uppercase tracking-wide text-wordle-text underline decoration-wordle-border underline-offset-4 transition hover:text-wordle-green"
+            >
+              View results
+            </button>
+          </div>
         )}
 
         <WordleBoard
@@ -277,6 +288,10 @@ export function WhittleGame() {
         turnsUsed={gameState.turnsUsed}
         par={gameState.par}
         status={gameState.status}
+        startWord={gameState.startWord}
+        targetWord={gameState.targetWord}
+        moveHistory={gameState.moveHistory}
+        onShareMessage={showToast}
         onClose={() => {
           if (infoModal === 'how-to') markHowToPlaySeen()
           setInfoModal(null)
@@ -291,6 +306,7 @@ export function WhittleGame() {
         par={gameState.par}
         puzzleId={dailyPuzzle.id}
         moveHistory={gameState.moveHistory}
+        stats={stats}
         onClose={() => setEndModalOpen(false)}
         onShareMessage={showToast}
       />

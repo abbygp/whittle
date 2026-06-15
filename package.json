@@ -4,12 +4,12 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --host 127.0.0.1 --port 3015",
+    "dev": "vite --host 127.0.0.1 --port 3020",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview --host 127.0.0.1 --port 3015",
-    "start": "vite --host 127.0.0.1 --port 3015",
-    "stop": "for port in 3015 3017 3018; do lsof -ti :$port -sTCP:LISTEN | xargs kill -9 2>/dev/null; done",
+    "preview": "vite preview --host 127.0.0.1 --port 3020",
+    "start": "vite --host 127.0.0.1 --port 3020",
+    "stop": "for port in 3015 3017 3018 3019 3020; do lsof -ti :$port -sTCP:LISTEN | xargs kill -9 2>/dev/null; done",
     "reset": "npm run stop && npm start"
   },
   "dependencies": {

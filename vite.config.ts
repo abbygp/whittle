@@ -6,12 +6,18 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
     host: '127.0.0.1',
-    port: 3015,
-    strictPort: true,
+    port: 3020,
+    strictPort: false,
+    headers: {
+      'Cache-Control': 'no-store',
+    },
   },
   preview: {
     host: '127.0.0.1',
-    port: 3015,
-    strictPort: true,
+    port: 3020,
+    strictPort: false,
+    headers: {
+      'Cache-Control': 'no-store',
+    },
   },
 })
