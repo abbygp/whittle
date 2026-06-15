@@ -53,7 +53,7 @@ export function buildShareText(
   return lines.join('\n')
 }
 
-export const PLAY_URL = 'https://whittle.abigailprince21.workers.dev/'
+export const PLAY_URL = 'http://whittledaily.com/'
 
 export function getPlayUrl(): string {
   return PLAY_URL
