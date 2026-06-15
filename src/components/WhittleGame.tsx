@@ -10,6 +10,7 @@ import {
   applyAction,
   checkDeadEndLoss,
 } from '../lib/gameLogic'
+import { CoffeeLink } from './CoffeeLink'
 import { GameFooter } from './GameFooter'
 import { GameHeader } from './GameHeader'
 import { GameModal } from './GameModal'
@@ -214,6 +215,7 @@ export function WhittleGame() {
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden">
+      <CoffeeLink />
       <GameHeader gameState={gameState} />
 
       <main
