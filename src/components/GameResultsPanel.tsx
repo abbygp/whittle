@@ -9,6 +9,7 @@ import {
 } from '../lib/share'
 import { formatScore, scoreVsPar } from '../lib/score'
 import { COFFEE_URL } from '../lib/support'
+import type { GameMode } from '../lib/gameMode'
 import { type PlayerStats, winRate } from '../lib/stats'
 import { NextPuzzleCountdown } from './NextPuzzleCountdown'
 
@@ -34,7 +35,9 @@ interface GameResultsPanelProps {
   puzzleId: number
   moveHistory: MoveRecord[]
   stats: PlayerStats
+  gameMode?: GameMode
   onShareMessage?: (message: string) => void
+  onNextPuzzle?: () => void
   lifetimeStats?: ReactNode
 }
 
@@ -47,9 +50,12 @@ export function GameResultsPanel({
   puzzleId,
   moveHistory,
   stats,
+  gameMode = 'daily',
   onShareMessage,
+  onNextPuzzle,
   lifetimeStats,
 }: GameResultsPanelProps) {
+  const isUnlimited = gameMode === 'unlimited'
   const [copied, setCopied] = useState(false)
   const finished = status !== 'playing'
   const won = status === 'won'
@@ -60,9 +66,19 @@ export function GameResultsPanel({
       buildShareText(
         { startWord, targetWord, turnsUsed, par, status, moveHistory },
         puzzleId,
-        getPlayUrl(),
+        getPlayUrl(isUnlimited),
+        isUnlimited,
       ),
-    [startWord, targetWord, turnsUsed, par, status, moveHistory, puzzleId],
+    [
+      startWord,
+      targetWord,
+      turnsUsed,
+      par,
+      status,
+      moveHistory,
+      puzzleId,
+      isUnlimited,
+    ],
   )
   const showNativeShare = canNativeShare()
 
@@ -126,7 +142,19 @@ export function GameResultsPanel({
 
       {lifetimeStats}
 
-      <NextPuzzleCountdown />
+      {isUnlimited ? (
+        onNextPuzzle && (
+          <button
+            type="button"
+            onClick={onNextPuzzle}
+            className="flex h-12 w-full items-center justify-center bg-wordle-green text-sm font-bold uppercase tracking-wide text-white transition hover:brightness-110"
+          >
+            Next Puzzle
+          </button>
+        )
+      ) : (
+        <NextPuzzleCountdown />
+      )}
 
       <div className="rounded-sm border border-[#e8c872]/40 bg-[#fff8e8] px-3 py-3">
         <p className="text-center text-[13px] leading-snug text-[#5c4a1e]">

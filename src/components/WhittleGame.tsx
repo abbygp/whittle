@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { loadDictionary } from '../lib/dictionary'
 import {
+  getArchivePuzzle,
   getDailyPuzzle,
   getYesterdayPuzzle,
   msUntilNextPuzzle,
@@ -9,11 +10,13 @@ import { loadOrCreateDailyGame, saveDailyGame } from '../lib/dailySave'
 import {
   applyAction,
   checkDeadEndLoss,
+  createInitialState,
 } from '../lib/gameLogic'
 import { CoffeeLink } from './CoffeeLink'
 import { GameFooter } from './GameFooter'
 import { GameHeader } from './GameHeader'
 import { GameModal } from './GameModal'
+import { AnswerModal } from './AnswerModal'
 import { InfoModal, type InfoModalKind } from './InfoModal'
 import { LetterKeyboard } from './LetterKeyboard'
 import { Toast } from './Toast'
@@ -25,8 +28,43 @@ import {
   type PlayerStats,
 } from '../lib/stats'
 import { hasSeenHowToPlay, markHowToPlaySeen } from '../lib/onboarding'
+import type { GameMode } from '../lib/gameMode'
+import { getModeUrl, isPremiumMode } from '../lib/gameMode'
+import { createUnlimitedSession } from '../lib/unlimitedPuzzle'
 
-function createSession(puzzle = getDailyPuzzle()) {
+function createSession(mode: GameMode, archivePuzzleNumber?: number) {
+  if (mode === 'unlimited') {
+    const session = createUnlimitedSession()
+    return {
+      puzzle: session.puzzle,
+      gameState: session.gameState,
+      statsRecorded: true,
+    }
+  }
+
+  if (mode === 'archive') {
+    const puzzle =
+      archivePuzzleNumber !== undefined
+        ? getArchivePuzzle(archivePuzzleNumber)
+        : null
+
+    if (!puzzle) {
+      const session = createUnlimitedSession()
+      return {
+        puzzle: session.puzzle,
+        gameState: session.gameState,
+        statsRecorded: true,
+      }
+    }
+
+    return {
+      puzzle,
+      gameState: createInitialState(puzzle),
+      statsRecorded: true,
+    }
+  }
+
+  const puzzle = getDailyPuzzle()
   const save = loadOrCreateDailyGame(puzzle)
   const statsRecorded =
     save.statsRecorded || hasRecordedResult(puzzle.id)
@@ -38,28 +76,50 @@ function createSession(puzzle = getDailyPuzzle()) {
   }
 }
 
-export function WhittleGame() {
-  const initialSession = useMemo(() => createSession(), [])
+interface WhittleGameProps {
+  gameMode?: GameMode
+  archivePuzzleNumber?: number
+}
+
+export function WhittleGame({
+  gameMode = 'daily',
+  archivePuzzleNumber,
+}: WhittleGameProps) {
+  const isUnlimited = gameMode === 'unlimited'
+  const isArchive = gameMode === 'archive'
+  const isPremium = isPremiumMode(gameMode)
+  const initialSession = useMemo(
+    () => createSession(gameMode, archivePuzzleNumber),
+    [gameMode, archivePuzzleNumber],
+  )
   const [dictionary, setDictionary] = useState<Set<string> | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [dailyPuzzle, setDailyPuzzle] = useState(initialSession.puzzle)
-  const yesterdayPuzzle = useMemo(() => getYesterdayPuzzle(), [dailyPuzzle.id])
+  const yesterdayPuzzle = useMemo(
+    () => (isPremium ? null : getYesterdayPuzzle()),
+    [dailyPuzzle.id, isPremium],
+  )
   const [gameState, setGameState] = useState(initialSession.gameState)
   const [shake, setShake] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
   const [mode, setMode] = useState<EditMode>('drop')
   const [selectedGap, setSelectedGap] = useState<number | null>(null)
   const [endModalOpen, setEndModalOpen] = useState(
-    () => initialSession.gameState.status !== 'playing',
+    () => !isPremium && initialSession.gameState.status !== 'playing',
   )
+  const [answerModalOpen, setAnswerModalOpen] = useState(false)
+  const [gaveUp, setGaveUp] = useState(false)
   const [infoModal, setInfoModal] = useState<InfoModalKind | null>(null)
   const [stats, setStats] = useState<PlayerStats>(() => loadStats())
   const mainRef = useRef<HTMLElement>(null)
   const prevStatusRef = useRef(gameState.status)
   const puzzleIdRef = useRef(dailyPuzzle.id)
   const statsRecordedRef = useRef(initialSession.statsRecorded)
+  const skipEndModalRef = useRef(false)
 
   useEffect(() => {
+    if (isPremium) return
+
     let timeoutId = 0
 
     const scheduleNextPuzzleCheck = () => {
@@ -74,10 +134,10 @@ export function WhittleGame() {
 
     scheduleNextPuzzleCheck()
     return () => window.clearTimeout(timeoutId)
-  }, [])
+  }, [isPremium])
 
   useEffect(() => {
-    if (puzzleIdRef.current === dailyPuzzle.id) return
+    if (isPremium || puzzleIdRef.current === dailyPuzzle.id) return
 
     puzzleIdRef.current = dailyPuzzle.id
     const save = loadOrCreateDailyGame(dailyPuzzle)
@@ -87,15 +147,17 @@ export function WhittleGame() {
     setEndModalOpen(false)
     setMode('drop')
     setSelectedGap(null)
-  }, [dailyPuzzle])
+  }, [dailyPuzzle, isPremium])
 
   useEffect(() => {
+    if (isPremium) return
+
     saveDailyGame({
       puzzleId: dailyPuzzle.id,
       gameState,
       statsRecorded: statsRecordedRef.current,
     })
-  }, [dailyPuzzle.id, gameState])
+  }, [dailyPuzzle.id, gameState, isPremium])
 
   useEffect(() => {
     loadDictionary()
@@ -113,9 +175,13 @@ export function WhittleGame() {
     prevStatusRef.current = gameState.status
 
     if (prevStatus === 'playing' && gameState.status !== 'playing') {
-      setEndModalOpen(true)
+      if (skipEndModalRef.current) {
+        skipEndModalRef.current = false
+      } else if (!isPremium) {
+        setEndModalOpen(true)
+      }
 
-      if (!statsRecordedRef.current) {
+      if (!isPremium && !statsRecordedRef.current) {
         setStats(recordResult(gameState.status, dailyPuzzle.id))
         statsRecordedRef.current = true
         saveDailyGame({
@@ -125,7 +191,7 @@ export function WhittleGame() {
         })
       }
     }
-  }, [dailyPuzzle.id, gameState])
+  }, [dailyPuzzle.id, gameState, isPremium])
 
   useEffect(() => {
     const main = mainRef.current
@@ -196,6 +262,29 @@ export function WhittleGame() {
     setSelectedGap(null)
   }, [])
 
+  const startNextPuzzle = useCallback(() => {
+    const session = createUnlimitedSession(dailyPuzzle.id)
+    puzzleIdRef.current = session.puzzle.id
+    setDailyPuzzle(session.puzzle)
+    setGameState(session.gameState)
+    setEndModalOpen(false)
+    setAnswerModalOpen(false)
+    setGaveUp(false)
+    setMode('drop')
+    setSelectedGap(null)
+  }, [dailyPuzzle.id])
+
+  const handleGiveUp = useCallback(() => {
+    if (gameState.status !== 'playing') return
+
+    skipEndModalRef.current = true
+    setGaveUp(true)
+    setGameState((prev) => ({ ...prev, status: 'lost' }))
+    setAnswerModalOpen(true)
+    setMode('drop')
+    setSelectedGap(null)
+  }, [gameState.status])
+
   const isPlaying = gameState.status === 'playing'
 
   if (loadError) {
@@ -218,7 +307,7 @@ export function WhittleGame() {
   return (
     <div className="flex h-dvh flex-col overflow-hidden">
       <CoffeeLink />
-      <GameHeader gameState={gameState} />
+      <GameHeader gameState={gameState} gameMode={gameMode} />
 
       <main
         ref={mainRef}
@@ -230,18 +319,67 @@ export function WhittleGame() {
 
         {!isPlaying && (
           <div className="mb-4 flex flex-col items-center gap-2">
-            <p className="text-center text-[12px] font-semibold uppercase tracking-widest text-wordle-gray">
-              {gameState.status === 'won'
-                ? 'Come back tomorrow for a new puzzle'
-                : 'No moves left — try again tomorrow'}
-            </p>
-            <button
-              type="button"
-              onClick={() => setEndModalOpen(true)}
-              className="text-[12px] font-bold uppercase tracking-wide text-wordle-text underline decoration-wordle-border underline-offset-4 transition hover:text-wordle-green"
-            >
-              View results
-            </button>
+            {isPremium ? (
+              <>
+                <p className="text-center text-[12px] font-semibold uppercase tracking-widest text-wordle-gray">
+                  {gameState.status === 'won'
+                    ? isArchive
+                      ? 'Nice work'
+                      : 'Nice work — keep going'
+                    : gaveUp
+                      ? 'Answer revealed — try another'
+                      : 'No moves left — try another'}
+                </p>
+                {isUnlimited && (
+                  <button
+                    type="button"
+                    onClick={startNextPuzzle}
+                    className="text-[12px] font-bold uppercase tracking-wide text-wordle-green underline decoration-wordle-border underline-offset-4 transition hover:brightness-110"
+                  >
+                    Next puzzle
+                  </button>
+                )}
+                {isArchive && (
+                  <a
+                    href={getModeUrl('archive')}
+                    className="text-[12px] font-bold uppercase tracking-wide text-wordle-green underline decoration-wordle-border underline-offset-4 transition hover:brightness-110"
+                  >
+                    Back to archive
+                  </a>
+                )}
+                {gaveUp && (
+                  <button
+                    type="button"
+                    onClick={() => setAnswerModalOpen(true)}
+                    className="text-[12px] font-bold uppercase tracking-wide text-wordle-text underline decoration-wordle-border underline-offset-4 transition hover:text-wordle-green"
+                  >
+                    View answer
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setEndModalOpen(true)}
+                  className="text-[12px] font-bold uppercase tracking-wide text-wordle-text underline decoration-wordle-border underline-offset-4 transition hover:text-wordle-green"
+                >
+                  View results
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="text-center text-[12px] font-semibold uppercase tracking-widest text-wordle-gray">
+                  {gameState.status === 'won'
+                    ? 'Come back tomorrow for a new puzzle'
+                    : 'No moves left — try again tomorrow'}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setEndModalOpen(true)}
+                  className="text-[12px] font-bold uppercase tracking-wide text-wordle-text underline decoration-wordle-border underline-offset-4 transition hover:text-wordle-green"
+                >
+                  View results
+                </button>
+              </>
+            )}
           </div>
         )}
 
@@ -255,6 +393,16 @@ export function WhittleGame() {
           onDrop={handleDrop}
           onSelectGap={handleSelectGap}
         />
+
+        {isPremium && isPlaying && (
+          <button
+            type="button"
+            onClick={handleGiveUp}
+            className="mt-6 text-[12px] font-semibold uppercase tracking-widest text-wordle-gray underline decoration-wordle-border underline-offset-4 transition hover:text-wordle-text"
+          >
+            Give up · Show answer
+          </button>
+        )}
       </main>
 
       {isPlaying && (
@@ -274,6 +422,7 @@ export function WhittleGame() {
       )}
 
       <GameFooter
+        gameMode={gameMode}
         onYesterday={() => setInfoModal('yesterday')}
         onStats={() => setInfoModal('stats')}
         onHowToPlay={() => setInfoModal('how-to')}
@@ -283,7 +432,7 @@ export function WhittleGame() {
       <InfoModal
         kind={infoModal}
         puzzle={dailyPuzzle}
-        yesterdayPuzzle={yesterdayPuzzle}
+        yesterdayPuzzle={yesterdayPuzzle ?? getYesterdayPuzzle()}
         stats={stats}
         turnsUsed={gameState.turnsUsed}
         par={gameState.par}
@@ -297,6 +446,12 @@ export function WhittleGame() {
           setInfoModal(null)
         }}
       />
+      <AnswerModal
+        open={answerModalOpen}
+        puzzle={dailyPuzzle}
+        onClose={() => setAnswerModalOpen(false)}
+        onNextPuzzle={startNextPuzzle}
+      />
       <GameModal
         open={endModalOpen}
         status={gameState.status}
@@ -307,8 +462,10 @@ export function WhittleGame() {
         puzzleId={dailyPuzzle.id}
         moveHistory={gameState.moveHistory}
         stats={stats}
+        gameMode={gameMode}
         onClose={() => setEndModalOpen(false)}
         onShareMessage={showToast}
+        onNextPuzzle={isUnlimited ? startNextPuzzle : undefined}
       />
     </div>
   )

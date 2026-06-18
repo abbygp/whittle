@@ -31,6 +31,7 @@ export function buildShareText(
   gameState: ShareState,
   puzzleId: number,
   playUrl: string,
+  unlimited = false,
 ): string {
   const { startWord, targetWord, turnsUsed, par, status, moveHistory } =
     gameState
@@ -40,8 +41,12 @@ export function buildShareText(
   const wordPath = buildWordPath(startWord, moveHistory)
   const grid = buildShareGrid(wordPath, won)
 
+  const header = unlimited
+    ? `Whittle Unlimited #${puzzleId}`
+    : `Whittle #${puzzleId}`
+
   const lines = [
-    `Whittle #${puzzleId}`,
+    header,
     `${startWord} → ${targetWord}`,
     won
       ? `${turnsUsed}/${par} · ${score}`
@@ -55,8 +60,8 @@ export function buildShareText(
 
 export const PLAY_URL = 'http://whittledaily.com/'
 
-export function getPlayUrl(): string {
-  return PLAY_URL
+export function getPlayUrl(unlimited = false): string {
+  return unlimited ? `${PLAY_URL}?mode=unlimited` : PLAY_URL
 }
 
 export async function copyShareText(text: string): Promise<boolean> {

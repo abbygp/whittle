@@ -1,41 +1,21 @@
 import { motion } from 'framer-motion'
 import { useEffect } from 'react'
-import type { GameStatus, MoveRecord } from '../types/game'
-import type { PlayerStats } from '../lib/stats'
-import type { GameMode } from '../lib/gameMode'
-import { GameResultsPanel } from './GameResultsPanel'
+import type { Level } from '../types/game'
+import { SolutionBoard } from './BoardPreview'
 
-interface GameModalProps {
+interface AnswerModalProps {
   open: boolean
-  status: GameStatus
-  startWord: string
-  targetWord: string
-  turnsUsed: number
-  par: number
-  puzzleId: number
-  moveHistory: MoveRecord[]
-  stats: PlayerStats
-  gameMode?: GameMode
+  puzzle: Level
   onClose: () => void
-  onShareMessage?: (message: string) => void
   onNextPuzzle?: () => void
 }
 
-export function GameModal({
+export function AnswerModal({
   open,
-  status,
-  startWord,
-  targetWord,
-  turnsUsed,
-  par,
-  puzzleId,
-  moveHistory,
-  stats,
-  gameMode = 'daily',
+  puzzle,
   onClose,
-  onShareMessage,
   onNextPuzzle,
-}: GameModalProps) {
+}: AnswerModalProps) {
   useEffect(() => {
     if (!open) return
     const onKeyDown = (event: KeyboardEvent) => {
@@ -45,7 +25,7 @@ export function GameModal({
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [open, onClose])
 
-  if (status === 'playing' || !open) return null
+  if (!open) return null
 
   return (
     <div
@@ -56,18 +36,14 @@ export function GameModal({
         initial={{ opacity: 0, scale: 0.95, y: 8 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ type: 'spring', stiffness: 380, damping: 28 }}
-        className="relative w-full max-w-sm overflow-hidden rounded-sm bg-wordle-bg shadow-2xl"
+        className="relative max-h-[calc(100dvh-2rem)] w-full max-w-sm overflow-y-auto rounded-sm bg-wordle-bg shadow-2xl"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="border-b border-wordle-border bg-black/[0.02] px-6 pb-4 pt-6">
           <div className="grid grid-cols-[2rem_1fr_2rem] items-center">
             <div aria-hidden />
             <p className="text-center text-[12px] font-semibold uppercase tracking-widest text-wordle-gray">
-              {gameMode === 'unlimited'
-                ? `Unlimited #${puzzleId}`
-                : gameMode === 'archive'
-                  ? `Archive #${puzzleId}`
-                  : `Whittle #${puzzleId}`}
+              Answer · Unlimited #{puzzle.id}
             </p>
             <button
               type="button"
@@ -87,20 +63,30 @@ export function GameModal({
           </div>
         </div>
 
-        <div className="px-6 py-5">
-          <GameResultsPanel
-            status={status}
-            startWord={startWord}
-            targetWord={targetWord}
-            turnsUsed={turnsUsed}
-            par={par}
-            puzzleId={puzzleId}
-            moveHistory={moveHistory}
-            stats={stats}
-            gameMode={gameMode}
-            onShareMessage={onShareMessage}
-            onNextPuzzle={onNextPuzzle}
+        <div className="space-y-4 px-6 py-5">
+          <p className="text-center text-[14px] text-wordle-text">
+            <span className="font-bold tracking-widest">{puzzle.startWord}</span>
+            {' → '}
+            <span className="font-bold tracking-widest">{puzzle.targetWord}</span>
+            {' · Par '}
+            {puzzle.solutionPath.length - 1}
+          </p>
+
+          <SolutionBoard
+            words={puzzle.solutionPath}
+            targetWord={puzzle.targetWord}
+            showGoal={false}
           />
+
+          {onNextPuzzle && (
+            <button
+              type="button"
+              onClick={onNextPuzzle}
+              className="flex h-12 w-full items-center justify-center bg-wordle-green text-sm font-bold uppercase tracking-wide text-white transition hover:brightness-110"
+            >
+              Next Puzzle
+            </button>
+          )}
         </div>
       </motion.div>
     </div>

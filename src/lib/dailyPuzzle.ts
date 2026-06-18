@@ -35,6 +35,38 @@ function puzzleForDayOffset(dayOffset: number): Level {
   return toLevel(definition, dayOffset + 1)
 }
 
+export function getArchivePuzzleCount(date = new Date()): number {
+  return Math.max(0, daysSinceAnchor(date))
+}
+
+export function getArchivePuzzle(
+  puzzleNumber: number,
+  date = new Date(),
+): Level | null {
+  const dayOffset = puzzleNumber - 1
+  if (dayOffset < 0 || dayOffset >= daysSinceAnchor(date)) return null
+  return puzzleForDayOffset(dayOffset)
+}
+
+export function getArchivePuzzles(date = new Date()): Level[] {
+  const count = getArchivePuzzleCount(date)
+  return Array.from({ length: count }, (_, dayOffset) =>
+    puzzleForDayOffset(dayOffset),
+  )
+}
+
+export function getDateLabelForPuzzleNumber(puzzleNumber: number): string {
+  const dayOffset = puzzleNumber - 1
+  const [year, month, day] = PUZZLE_ANCHOR_KEY.split('-').map(Number)
+  const utc = Date.UTC(year, month - 1, day + dayOffset, 12, 0, 0)
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: PUZZLE_TIMEZONE,
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(new Date(utc))
+}
+
 export function getDailyPuzzle(date = new Date()): Level {
   return puzzleForDayOffset(daysSinceAnchor(date))
 }
