@@ -1,24 +1,31 @@
 let wordSet: Set<string> | null = null
 let loadPromise: Promise<Set<string>> | null = null
 
+function parseWordList(text: string): string[] {
+  return text
+    .split('\n')
+    .map((line) => line.trim().toLowerCase())
+    .filter((word) => word && !word.startsWith('#'))
+}
+
+async function fetchWordList(path: string): Promise<string[]> {
+  const res = await fetch(path)
+  if (!res.ok) throw new Error(`Failed to load dictionary: ${path}`)
+  const text = await res.text()
+  return parseWordList(text)
+}
+
 export async function loadDictionary(): Promise<Set<string>> {
   if (wordSet) return wordSet
   if (loadPromise) return loadPromise
 
-  loadPromise = fetch('/words.txt')
-    .then((res) => {
-      if (!res.ok) throw new Error('Failed to load dictionary')
-      return res.text()
-    })
-    .then((text) => {
-      wordSet = new Set(
-        text
-          .split('\n')
-          .map((w) => w.trim().toLowerCase())
-          .filter(Boolean),
-      )
-      return wordSet
-    })
+  loadPromise = Promise.all([
+    fetchWordList('/words.txt'),
+    fetchWordList('/word-supplements.txt').catch(() => []),
+  ]).then(([baseWords, supplementWords]) => {
+    wordSet = new Set([...baseWords, ...supplementWords])
+    return wordSet
+  })
 
   return loadPromise
 }

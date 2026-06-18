@@ -1,0 +1,3 @@
+# Common English words missing from the main dictionary
+hang
+lang
