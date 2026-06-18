@@ -26,21 +26,37 @@ export function UnlimitedPaywall({ onUnlock }: UnlimitedPaywallProps) {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center bg-wordle-bg px-4 py-8">
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 p-4">
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ type: 'spring', stiffness: 320, damping: 28 }}
-        className="w-full max-w-sm space-y-6"
+        className="relative w-full max-w-sm rounded-sm bg-wordle-bg px-6 py-6 shadow-2xl"
       >
-        <div className="text-center">
-          <h1 className="text-[32px] font-bold leading-none tracking-[0.2em] sm:text-[40px]">
-            WHITTLE
-          </h1>
-          <p className="mt-2 text-[10px] font-bold uppercase leading-none tracking-[0.35em] text-wordle-green">
-            Unlimited
-          </p>
-        </div>
+        <a
+          href={getModeUrl('daily')}
+          aria-label="Close"
+          className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-sm text-wordle-text transition hover:bg-black/5"
+        >
+          <svg aria-hidden width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <path
+              d="M6 6l12 12M18 6L6 18"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+            />
+          </svg>
+        </a>
+
+        <div className="space-y-6">
+          <div className="text-center">
+            <h1 className="text-[32px] font-bold leading-none tracking-[0.2em] sm:text-[40px]">
+              WHITTLE
+            </h1>
+            <p className="mt-2 text-[10px] font-bold uppercase leading-none tracking-[0.35em] text-wordle-green">
+              Unlimited
+            </p>
+          </div>
 
         <p className="text-center text-[15px] leading-relaxed text-wordle-text">
           Want to keep whittling? Unlock Whittle Unlimited to play past puzzles
@@ -95,6 +111,7 @@ export function UnlimitedPaywall({ onUnlock }: UnlimitedPaywallProps) {
         >
           Back to Daily Puzzle
         </a>
+        </div>
       </motion.div>
     </div>
   )
