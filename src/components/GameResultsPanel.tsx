@@ -10,6 +10,7 @@ import {
 import { formatScore, scoreVsPar } from '../lib/score'
 import { COFFEE_URL } from '../lib/support'
 import type { GameMode } from '../lib/gameMode'
+import { getModeUrl } from '../lib/gameMode'
 import { type PlayerStats, winRate } from '../lib/stats'
 import { NextPuzzleCountdown } from './NextPuzzleCountdown'
 
@@ -154,6 +155,28 @@ export function GameResultsPanel({
         )
       ) : (
         <NextPuzzleCountdown />
+      )}
+
+      {gameMode === 'daily' && won && (
+        <div className="space-y-3 rounded-sm border border-wordle-green/30 bg-[#f4faf4] px-3 py-3">
+          <p className="text-center text-[13px] leading-snug text-wordle-text">
+            Want to keep whittling? Replay past puzzles or play endless rounds.
+          </p>
+          <div className="flex gap-2">
+            <a
+              href={getModeUrl('archive')}
+              className="flex h-11 flex-1 items-center justify-center rounded-sm border-2 border-wordle-text bg-wordle-bg px-2 text-[11px] font-bold uppercase tracking-wide text-wordle-text transition hover:bg-black/5"
+            >
+              Whittle Archive
+            </a>
+            <a
+              href={getModeUrl('unlimited')}
+              className="flex h-11 flex-1 items-center justify-center rounded-sm bg-wordle-green px-2 text-[11px] font-bold uppercase tracking-wide text-white transition hover:brightness-110"
+            >
+              Whittle Unlimited
+            </a>
+          </div>
+        </div>
       )}
 
       <div className="rounded-sm border border-[#e8c872]/40 bg-[#fff8e8] px-3 py-3">
