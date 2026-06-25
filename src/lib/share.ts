@@ -58,7 +58,7 @@ export function buildShareText(
   return lines.join('\n')
 }
 
-export const PLAY_URL = 'http://whittledaily.com/'
+export const PLAY_URL = 'https://whittledaily.com/'
 
 export function getPlayUrl(unlimited = false): string {
   return unlimited ? `${PLAY_URL}?mode=unlimited` : PLAY_URL
