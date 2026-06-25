@@ -9,6 +9,8 @@ type ShareState = Pick<
 const GREEN = '🟩'
 const RED = '🟥'
 
+export const PLAY_URL = 'https://whittledaily.com/'
+
 export function buildWordPath(
   startWord: string,
   moveHistory: MoveRecord[],
@@ -27,10 +29,9 @@ export function buildShareGrid(words: string[], won: boolean): string {
     .join('\n')
 }
 
-export function buildShareText(
+export function buildShareBody(
   gameState: ShareState,
   puzzleId: number,
-  playUrl: string,
   unlimited = false,
 ): string {
   const { startWord, targetWord, turnsUsed, par, status, moveHistory } =
@@ -45,23 +46,28 @@ export function buildShareText(
     ? `Whittle Unlimited #${puzzleId}`
     : `Whittle #${puzzleId}`
 
-  const lines = [
+  return [
     header,
     `${startWord} → ${targetWord}`,
     won
       ? `${turnsUsed}/${par} · ${score}`
       : `${turnsUsed} moves · par ${par} · ${score}`,
     grid,
-    playUrl,
-  ]
-
-  return lines.join('\n')
+  ].join('\n')
 }
 
-export const PLAY_URL = 'https://whittledaily.com/'
+export function buildShareText(
+  gameState: ShareState,
+  puzzleId: number,
+  playUrl: string,
+  unlimited = false,
+): string {
+  return `${buildShareBody(gameState, puzzleId, unlimited)}\n${playUrl}`
+}
 
 export function getPlayUrl(unlimited = false): string {
-  return unlimited ? `${PLAY_URL}?mode=unlimited` : PLAY_URL
+  const base = PLAY_URL
+  return unlimited ? `${base}?mode=unlimited` : base
 }
 
 export async function copyShareText(text: string): Promise<boolean> {
@@ -77,11 +83,14 @@ export function canNativeShare(): boolean {
   return typeof navigator !== 'undefined' && typeof navigator.share === 'function'
 }
 
-export async function nativeShare(text: string): Promise<boolean> {
+export async function nativeShare(
+  text: string,
+  url = getPlayUrl(),
+): Promise<boolean> {
   if (!canNativeShare()) return false
 
   try {
-    await navigator.share({ title: 'Whittle', text })
+    await navigator.share({ title: 'Whittle', text, url })
     return true
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') return false

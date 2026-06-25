@@ -1,7 +1,7 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import type { GameStatus, MoveRecord } from '../types/game'
 import {
-  buildShareText,
+  buildShareBody,
   canNativeShare,
   copyShareText,
   getPlayUrl,
@@ -62,12 +62,12 @@ export function GameResultsPanel({
   const won = status === 'won'
   const vsPar = scoreVsPar(turnsUsed, par)
 
-  const shareText = useMemo(
+  const playUrl = useMemo(() => getPlayUrl(isUnlimited), [isUnlimited])
+  const shareBody = useMemo(
     () =>
-      buildShareText(
+      buildShareBody(
         { startWord, targetWord, turnsUsed, par, status, moveHistory },
         puzzleId,
-        getPlayUrl(isUnlimited),
         isUnlimited,
       ),
     [
@@ -80,6 +80,10 @@ export function GameResultsPanel({
       puzzleId,
       isUnlimited,
     ],
+  )
+  const shareText = useMemo(
+    () => `${shareBody}\n${playUrl}`,
+    [shareBody, playUrl],
   )
   const showNativeShare = canNativeShare()
 
@@ -95,7 +99,7 @@ export function GameResultsPanel({
   }
 
   const handleShare = async () => {
-    const success = await nativeShare(shareText)
+    const success = await nativeShare(shareBody, playUrl)
     if (success) onShareMessage?.('Shared')
   }
 
