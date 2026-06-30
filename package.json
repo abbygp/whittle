@@ -7,11 +7,12 @@
     "dev": "vite --host 127.0.0.1 --port 3020",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview --host 127.0.0.1 --port 3020",
+    "preview": "npm run build && wrangler dev",
     "start": "vite --host 127.0.0.1 --port 3020",
     "stop": "for port in 3015 3017 3018 3019 3020 3021 3022 3023 3024 3025 3026; do pids=$(lsof -ti :$port -sTCP:LISTEN 2>/dev/null); [ -n \"$pids\" ] && kill -9 $pids 2>/dev/null; done; true",
     "reset": "npm run stop && npm start",
-    "generate:puzzles": "node scripts/generateYearPuzzles.mjs"
+    "generate:puzzles": "node scripts/generateYearPuzzles.mjs",
+    "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
     "framer-motion": "^12.40.0",
@@ -19,6 +20,7 @@
     "react-dom": "^19.2.6"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.42.4",
     "@eslint/js": "^10.0.1",
     "@tailwindcss/vite": "^4.3.1",
     "@types/node": "^24.12.3",
@@ -32,6 +34,7 @@
     "tailwindcss": "^4.3.1",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.59.2",
-    "vite": "^8.0.12"
+    "vite": "^8.0.12",
+    "wrangler": "^4.106.0"
   }
 }
