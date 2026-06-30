@@ -13,7 +13,7 @@ export interface Level {
   description: string
   startWord: string
   targetWord: string
-  solutionPath: string[]
+  solutionPath: readonly string[]
 }
 
 export type GameStatus = 'playing' | 'won' | 'lost'

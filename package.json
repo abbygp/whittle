@@ -10,7 +10,8 @@
     "preview": "vite preview --host 127.0.0.1 --port 3020",
     "start": "vite --host 127.0.0.1 --port 3020",
     "stop": "for port in 3015 3017 3018 3019 3020 3021 3022 3023 3024 3025 3026; do pids=$(lsof -ti :$port -sTCP:LISTEN 2>/dev/null); [ -n \"$pids\" ] && kill -9 $pids 2>/dev/null; done; true",
-    "reset": "npm run stop && npm start"
+    "reset": "npm run stop && npm start",
+    "generate:puzzles": "node scripts/generateYearPuzzles.mjs"
   },
   "dependencies": {
     "framer-motion": "^12.40.0",
