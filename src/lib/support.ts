@@ -27,7 +27,7 @@ export function getSupportMailtoUrl(
  */
 export const STRIPE_PAYMENT_LINK =
   import.meta.env.VITE_STRIPE_PAYMENT_LINK ??
-  'https://buy.stripe.com/eVqfZi4OKfl67O90e8eIw00'
+  'https://buy.stripe.com/eVqbJ29DgdYMbIFenz4gg00'
 
 /** @deprecated Use STRIPE_PAYMENT_LINK */
 export const UNLIMITED_PRODUCT_URL = STRIPE_PAYMENT_LINK
