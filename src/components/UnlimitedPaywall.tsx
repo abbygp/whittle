@@ -1,33 +1,13 @@
 import { motion } from 'framer-motion'
-import { useState } from 'react'
 import { CoffeeLink } from './CoffeeLink'
 import { HamburgerMenu } from './HamburgerMenu'
-import { getModeUrl } from '../lib/gameMode'
 import {
   getSupportMailtoUrl,
   STRIPE_PAYMENT_LINK,
   UNLIMITED_PRICE_LABEL,
 } from '../lib/support'
-import { tryUnlockWithCode } from '../lib/unlimitedAccess'
 
-interface UnlimitedPaywallProps {
-  onUnlock: () => void
-}
-
-export function UnlimitedPaywall({ onUnlock }: UnlimitedPaywallProps) {
-  const [code, setCode] = useState('')
-  const [error, setError] = useState<string | null>(null)
-
-  const handleUnlock = () => {
-    if (tryUnlockWithCode(code)) {
-      setError(null)
-      onUnlock()
-      return
-    }
-
-    setError('Invalid unlock code')
-  }
-
+export function UnlimitedPaywall() {
   return (
     <div className="flex min-h-dvh flex-col bg-wordle-bg">
       <HamburgerMenu />
@@ -82,51 +62,11 @@ export function UnlimitedPaywall({ onUnlock }: UnlimitedPaywallProps) {
             Unlock for {UNLIMITED_PRICE_LABEL}
           </a>
 
-          <div className="space-y-3 border-t border-wordle-border pt-6">
-            <p className="text-center text-[13px] text-wordle-gray">
-              Already purchased? Enter your unlock code.
-            </p>
-            <input
-              type="text"
-              value={code}
-              onChange={(event) => {
-                setCode(event.target.value)
-                setError(null)
-              }}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') handleUnlock()
-              }}
-              placeholder="Unlock code"
-              autoComplete="off"
-              spellCheck={false}
-              className="h-12 w-full border-2 border-wordle-border bg-wordle-bg px-3 text-center text-[15px] font-semibold uppercase tracking-widest text-wordle-text outline-none transition focus:border-wordle-green"
-            />
-            {error && (
-              <p className="text-center text-[12px] font-semibold text-red-600">
-                {error}
-              </p>
-            )}
-            <button
-              type="button"
-              onClick={handleUnlock}
-              className="flex h-12 w-full items-center justify-center border-2 border-wordle-text bg-wordle-bg text-sm font-bold uppercase tracking-wide text-wordle-text transition hover:bg-black/5"
-            >
-              Unlock with code
-            </button>
-          </div>
-
           <a
             href={getSupportMailtoUrl()}
             className="flex h-11 w-full items-center justify-center border border-wordle-border text-[12px] font-bold uppercase tracking-widest text-wordle-gray transition hover:border-wordle-green hover:text-wordle-green"
           >
             Having issues? Email me
-          </a>
-
-          <a
-            href={getModeUrl('daily')}
-            className="block text-center text-[12px] font-semibold uppercase tracking-widest text-wordle-gray underline decoration-wordle-border underline-offset-4 transition hover:text-wordle-text"
-          >
-            Back to Daily Puzzle
           </a>
         </motion.div>
       </div>

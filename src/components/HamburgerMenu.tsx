@@ -61,8 +61,16 @@ export function HamburgerMenu() {
         >
           <a
             role="menuitem"
-            href={getModeUrl('unlimited')}
+            href={getModeUrl('daily')}
             className={menuItemClass}
+            onClick={() => setOpen(false)}
+          >
+            Whittle Daily
+          </a>
+          <a
+            role="menuitem"
+            href={getModeUrl('unlimited')}
+            className={`${menuItemClass} border-t border-wordle-border`}
             onClick={() => setOpen(false)}
           >
             Whittle Unlimited

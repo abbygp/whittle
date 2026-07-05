@@ -15,7 +15,7 @@ function App() {
   const mode = getGameModeFromLocation()
   const archivePuzzleNumber = getArchivePuzzleNumberFromLocation()
   const [initialUnlock] = useState(() => resolvePremiumUnlockFromUrl())
-  const [hasUnlimited, setHasUnlimited] = useState(initialUnlock.unlocked)
+  const [hasUnlimited] = useState(initialUnlock.unlocked)
   const [activationToast] = useState<string | null>(
     initialUnlock.fromStripe ? ACTIVATION_MESSAGE : null,
   )
@@ -24,7 +24,6 @@ function App() {
     return (
       <UnlimitedRoute
         hasUnlimited={hasUnlimited}
-        onUnlock={() => setHasUnlimited(true)}
         activationToast={activationToast}
       >
         {mode === 'archive' && archivePuzzleNumber === null ? (

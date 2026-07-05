@@ -1,18 +1,15 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Toast } from './Toast'
 import { UnlimitedPaywall } from './UnlimitedPaywall'
-import { unlockUnlimited } from '../lib/unlimitedAccess'
 
 interface UnlimitedRouteProps {
   hasUnlimited: boolean
-  onUnlock: () => void
   activationToast: string | null
   children: ReactNode
 }
 
 export function UnlimitedRoute({
   hasUnlimited,
-  onUnlock,
   activationToast,
   children,
 }: UnlimitedRouteProps) {
@@ -29,14 +26,7 @@ export function UnlimitedRoute({
   }, [toast])
 
   if (!hasUnlimited) {
-    return (
-      <UnlimitedPaywall
-        onUnlock={() => {
-          unlockUnlimited()
-          onUnlock()
-        }}
-      />
-    )
+    return <UnlimitedPaywall />
   }
 
   return (
