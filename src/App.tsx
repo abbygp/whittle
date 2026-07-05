@@ -1,42 +1,45 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { ArchivePicker } from './components/ArchivePicker'
+import { UnlimitedRoute } from './components/UnlimitedRoute'
 import { WhittleGame } from './components/WhittleGame'
-import { UnlimitedPaywall } from './components/UnlimitedPaywall'
 import {
   getArchivePuzzleNumberFromLocation,
   getGameModeFromLocation,
   isPremiumMode,
 } from './lib/gameMode'
-import {
-  checkUrlUnlock,
-  hasUnlimitedAccess,
-} from './lib/unlimitedAccess'
+import { resolvePremiumUnlockFromUrl } from './lib/unlimitedAccess'
+
+const ACTIVATION_MESSAGE = 'Unlimited & Archive activated! 🪵'
 
 function App() {
   const mode = getGameModeFromLocation()
   const archivePuzzleNumber = getArchivePuzzleNumberFromLocation()
-  const [premiumUnlocked, setPremiumUnlocked] = useState(
-    () => hasUnlimitedAccess(),
+  const [initialUnlock] = useState(() => resolvePremiumUnlockFromUrl())
+  const [hasUnlimited, setHasUnlimited] = useState(initialUnlock.unlocked)
+  const [activationToast] = useState<string | null>(
+    initialUnlock.fromStripe ? ACTIVATION_MESSAGE : null,
   )
 
-  useEffect(() => {
-    if (checkUrlUnlock()) setPremiumUnlocked(true)
-  }, [])
-
-  if (isPremiumMode(mode) && !premiumUnlocked) {
-    return <UnlimitedPaywall onUnlock={() => setPremiumUnlocked(true)} />
+  if (isPremiumMode(mode)) {
+    return (
+      <UnlimitedRoute
+        hasUnlimited={hasUnlimited}
+        onUnlock={() => setHasUnlimited(true)}
+        activationToast={activationToast}
+      >
+        {mode === 'archive' && archivePuzzleNumber === null ? (
+          <ArchivePicker />
+        ) : (
+          <WhittleGame
+            gameMode={mode}
+            archivePuzzleNumber={archivePuzzleNumber ?? undefined}
+          />
+        )}
+      </UnlimitedRoute>
+    )
   }
 
-  if (mode === 'archive' && archivePuzzleNumber === null) {
-    return <ArchivePicker />
-  }
-
-  return (
-    <WhittleGame
-      gameMode={mode}
-      archivePuzzleNumber={archivePuzzleNumber ?? undefined}
-    />
-  )
+  return <WhittleGame gameMode={mode} />
 }
 
 export default App
